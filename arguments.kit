@@ -1,0 +1,408 @@
+include "getopt.h";
+include "ctype.h";
+include "errno.h";
+include "string.h";
+import kit.map;
+
+
+function strAdd(one: CString, two: CString) {
+    var out = malloc(one.length + two.length);
+    strcpy(out, one);
+    strcat(out, two);
+    return out;
+}
+
+
+enum ChoiceWhich {
+    INT;
+    STR;
+    BOOL;
+    FLOAT;
+    NONE;
+}
+
+
+struct Choice {
+    var intVal: Int;
+    var strVal: CString;
+    var boolVal: Bool;
+    var floatVal: Float;
+    var which: ChoiceWhich = ChoiceWhich.NONE;
+
+    static function newInt(val: Int) {
+        return struct Self {
+            intVal: val,
+            strVal: "",
+            boolVal: false,
+            floatVal: 0.0,
+            which: ChoiceWhich.INT
+        };
+    }
+
+    static function newStr(val: CString) {
+        return struct Self {
+            intVal: 0,
+            strVal: val,
+            boolVal: false,
+            floatVal: 0.0,
+            which: ChoiceWhich.STR
+        };
+    }
+
+    static function newBool(val: Bool) {
+        return struct Self {
+            intVal: 0,
+            strVal: "",
+            boolVal: val,
+            floatVal: 0.0,
+            which: ChoiceWhich.BOOL
+        };
+    }
+
+    static function newFloat(val: Float) {
+        return struct Self {
+            intVal: 0,
+            strVal: "",
+            boolVal: false,
+            floatVal: val,
+            which: ChoiceWhich.FLOAT
+        };
+    }
+
+    function print() {
+        match this.which {
+            INT => printf("%d\n", this.intVal);
+            STR => printf("%s\n", this.strVal);
+            BOOL => printf("%s\n", if this.boolVal then "true" else "false");
+            FLOAT => printf("%f\n", this.floatVal);
+        }
+    }
+}
+
+
+var defaultFlag = 0;
+const no_argument: Int = 0;
+const required_argument: Int = 1;
+const optional_argument: Int = 2;
+
+
+union ArgCallable {
+    var choiceFunc: function (Choice) -> Void;
+    var argsFunc: function (Arguments) -> Void;
+    var argFunc: function (Argument) -> Void;
+}
+
+
+struct Argument {
+    const shortName: CString = "_"; // used with -n
+    const longName: CString = "__"; // used with --name
+    const defaultValue: Choice = Choice.newInt(0); // used with --name
+    var currentValue: Choice;
+    var info: CString = "";
+    const needsValue: Int = no_argument;
+    var flag: Ptr[Int] = &defaultFlag;
+    var flagVal: Int = 0;
+    var func: ArgCallable;
+
+    static function new(shortName: CString = "_",
+                        longName: CString = "__",
+                        defaultValue: Choice = Choice.newInt(0),
+                        info: CString = "",
+                        needsValue: Int = no_argument,
+                        flag: Ptr[Int] = &defaultFlag,
+                        flagVal: Int = 0,
+                        func: ArgCallable) {
+        return struct Self {
+            shortName,
+            longName,
+            defaultValue,
+            currentValue: defaultValue,
+            info,
+            flag,
+            func
+        };
+    }
+
+    function printDefault() {
+        if this.needsValue != no_argument {
+            if this.needsValue == optional_argument {
+                match this.defaultValue.which {
+                    INT =>   printf("| Integer | Default: %d\n", this.defaultValue.intVal);
+                    STR =>   printf("| String  | Default: %s\n", this.defaultValue.strVal);
+                    BOOL =>  printf("| Boolean | Default: %s\n", if this.defaultValue.boolVal then "true" else "false");
+                    FLOAT => printf("| Float   | Default: %f\n", this.defaultValue.floatVal);
+                }
+            } else {
+                match this.defaultValue.which {
+                    INT =>   printf("| Integer | Required\n");
+                    STR =>   printf("| String  | Required\n");
+                    BOOL =>  printf("| Boolean | Required\n");
+                    FLOAT => printf("| Float   | Required\n");
+                }
+            }
+        }
+    }
+
+    function printSep() {
+        printf("----------------------------------------\n");
+    }
+
+    function printInfo() {
+        printf("%s\n", this.info);
+    }
+
+    function printOption() {
+        printf("| -%s      | --%s\n", this.shortName, this.longName);
+    }
+
+    function printAll() {
+        this.printInfo();
+        this.printSep();
+        this.printOption();
+        this.printDefault();
+    }
+
+    function toGetOptStruct(): option {
+        if this.flag != &defaultFlag {
+            return struct option {
+                name: this.longName,
+                has_arg: this.needsValue,
+                flag: null,
+                val: this.shortName[0]
+            };
+        } else {
+            return struct option {
+                name: this.longName,
+                has_arg: this.needsValue,
+                flag: this.flag,
+                val: this.flagVal
+            };
+        }
+    }
+
+    function call() {
+        this.func(this.currentValue);
+    }
+}
+
+
+struct Arguments {
+    var args: Vector[Argument];
+    var map: Map[Char, Int];  // gets a lookup value into the args vector
+
+    static function new() {
+        return struct Self {
+            args: Vector.new(10),
+            map: Map.new(10)
+        };
+    }
+
+    function add(shortName: CString = "_",
+                longName: CString = "__",
+                defaultValue: Choice = Choice.newInt(0),
+                info: CString = "",
+                needsValue: Int = no_argument,
+                func: ArgCallable,
+                flag: Ptr[Int] = &defaultFlag,
+                flagVal: Int = 0) {
+        this.map.put(shortName[0], this.args.length);
+        this.args.push(Argument.new(shortName,
+                                    longName,
+                                    defaultValue,
+                                    info,
+                                    needsValue,
+                                    flag,
+                                    flagVal,
+                                    func));
+    }
+
+    function printSep() {
+        printf("----------------------------------------\n");
+    }
+
+    function printOption() {
+        for n in this.args {
+            n.printOption();
+            n.printDefault();
+        }
+    }
+
+    function printInfo() {
+        for n in this.args {
+            n.printInfo();
+        }
+    }
+
+    function printAll() {
+        for n in this.args {
+            printf("+---------+-----------------------------\n| ");
+            n.printInfo();
+            printf("+---------+-----------------------------\n");
+            n.printOption();
+            n.printDefault();
+        }
+        printf("+---------+-----------------------------\n");
+    }
+
+    function toGetOptStruct(): Ptr[option] {
+        var outVec: Vector[option] = Vector.new(this.args.length);
+        for n in this.args {
+            outVec.push(n.toGetOptStruct());
+        }
+        var blank = struct option {name: "", has_arg: 0, flag: null, val: 0};
+        outVec.push(blank);  // was in the example, so i'm including it here
+        var out: Ptr[option] = malloc(outVec.length * sizeof(option));
+        for n in 0 ... outVec.length {
+            out[n] = outVec[n] as option;
+        }
+        return out;
+    }
+
+    function toGetOptString(): CString {
+        var out = "";
+        for n in this.args {
+            if n.needsValue == no_argument {
+                out = strAdd(out, n.shortName);
+            } else {
+                if n.needsValue == required_argument {
+                    out = strAdd(strAdd(out, n.shortName), ":");
+                } else {
+                    if n.needsValue == optional_argument {
+                        out = strAdd(strAdd(out, n.shortName), "::");
+                    } else {
+                        printf("Bad value for Self.needsValue: %d", n.needsValue);
+                    }
+                }
+            }
+        }
+        return out;
+    }
+
+    function get(c: Char): Argument {
+        return this.args[this.map[c]];
+    }
+}
+
+
+function chr2str(c: CArray[Char], length: Int): CString {
+    var out: CString = malloc((length + 1) * sizeof(Char));
+    strncpy(out, c, length + 1);
+    out[length + 1] = c'\0';
+    return out;
+}
+
+
+// function str2chr(s: CString): Ptr[CArray[Char]] {
+//     var out: CArray[Char];
+//     sprintf(out, "%s", s);
+//     return out;
+// }
+
+
+function lowercase(s: CString): CString {
+    var c: CArray[Char, 40];
+    sprintf(c, "%s", s);
+    // var c: CArray[Char] = *str2chr(s);
+    for i in 0 ... s.length + 1 {
+        if isalpha(c[i]) != 0 {
+            c[i] = tolower(c[i]);
+        }
+    }
+    // var out: CString = malloc((s.length + 1) * sizeof(Char));
+    // strncpy(out, c, c.length + 1);
+    // out[s.length + 1] = c'\0';
+    return chr2str(c, s.length);
+}
+
+
+function str2bool(s: CString): Bool {
+    s = lowercase(s);
+    match s {
+        "true" => return true;
+        "tru" => return true;
+        "tr" => return true;
+        "t" => return true;
+        "yes" => return true;
+        "ye" => return true;
+        "y" => return true;
+        "1" => return true;
+        "false" => return false;
+        "fals" => return false;
+        "fal" => return false;
+        "fa" => return false;
+        "f" => return false;
+        "no" => return false;
+        "n" => return false;
+        "nah" => return false;
+        "na" => return false;
+        "0" => return false;
+        default => return false;
+    }
+}
+
+
+function str2int(s: CString): Int {
+    var p: Ptr[Char] = s;
+    // errno = 0;
+    var val = strtoll(s, &p, 10);
+    // if (errno != 0) {
+    //     printf("conversion failed");
+    //     return 199199199199;
+    // }
+    // if (s == p) {
+    //     printf("conversion failed (no characters consumed)");
+    //     return 919919919919;
+    // }
+    // if (*p != 0) {
+    //     printf("conversion failed (trailing data)");
+    //     return 991991991991;
+    // }
+    return val;
+}
+
+
+var thisWasSupposedToBeOptional: Ptr[Ptr[Char]];
+
+function str2float(s: CString): Float {
+    return strtod(s, &thisWasSupposedToBeOptional);
+}
+
+
+function process(argc, argv, args: Arguments): Void {
+    var getOptString: CString = args.toGetOptString();
+    var getOptStruct: Ptr[option] = args.toGetOptStruct();
+    var option_index: Int = 0;
+    while true {
+        var c: Char = getopt_long(argc, argv, getOptString, getOptStruct, &option_index);
+
+        if c == -1_c || c == c'?' {
+            break;
+        }
+
+        var currentArg: Argument = args.get(c);
+        match currentArg.defaultValue.which {
+            INT =>   currentArg.currentValue = Choice.newInt(str2int(optarg));
+            STR =>   currentArg.currentValue = Choice.newStr(optarg);
+            BOOL =>  currentArg.currentValue = Choice.newBool(str2bool(optarg));
+            FLOAT => currentArg.currentValue = Choice.newFloat(str2float(optarg));
+        }
+        currentArg.call();
+    }
+}
+
+
+function demoFunc(val: Choice): Void {
+    val.print();
+}
+
+
+function main(argc: Int, argv: Ptr[Ptr[Char]]) {
+    // argc: Int, argv: Ptr[Ptr[Char]]
+    var test: Arguments = Arguments.new();
+    test.add("v", "val", Choice.newStr("abc"), "This is a test", required_argument, demoFunc);
+    test.add("a", "aaaa", Choice.newInt(0), "This is the second cli argument", no_argument, demoFunc);
+    test.add("n", "new", Choice.newInt(0), "This is the third cli argument", optional_argument, demoFunc);
+    test.add("h", "help", Choice.newInt(0), "This gets help", no_argument, test.printAll);
+    test.printAll();
+    process(argc, argv, test);
+}
