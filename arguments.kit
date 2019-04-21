@@ -6,7 +6,7 @@ import kit.map;
 
 
 function strAdd(one: CString, two: CString) {
-    var out = malloc(one.length + two.length);
+    var out = malloc(one.length + two.length + 1);
     strcpy(out, one);
     strcat(out, two);
     return out;
@@ -86,11 +86,14 @@ const required_argument: Int = 1;
 const optional_argument: Int = 2;
 
 
-union ArgCallable {
-    var choiceFunc: function (Choice) -> Void;
-    var argsFunc: function (Arguments) -> Void;
-    var argFunc: function (Argument) -> Void;
-}
+// union ArgCallable {
+//     var choiceFunc: function (Choice) -> Void;
+//     var argsFunc: function (Arguments) -> Void;
+//     var argFunc: function (Argument) -> Void;
+// }
+
+
+function defaultHandler(c: Choice, a: Argument, a_s: Arguments): Void {}
 
 
 struct Argument {
@@ -102,7 +105,7 @@ struct Argument {
     const needsValue: Int = no_argument;
     var flag: Ptr[Int] = &defaultFlag;
     var flagVal: Int = 0;
-    var func: ArgCallable;
+    var func: function (Choice, Argument, Arguments) -> Void;
 
     static function new(shortName: CString = "_",
                         longName: CString = "__",
@@ -111,7 +114,7 @@ struct Argument {
                         needsValue: Int = no_argument,
                         flag: Ptr[Int] = &defaultFlag,
                         flagVal: Int = 0,
-                        func: ArgCallable) {
+                        func: function (Choice, Argument, Arguments) -> Void = defaultHandler) {
         return struct Self {
             shortName,
             longName,
@@ -180,8 +183,8 @@ struct Argument {
         }
     }
 
-    function call() {
-        this.func(this.currentValue);
+    function call(args: Arguments) {
+        this.func(this.currentValue, this, args);
     }
 }
 
@@ -202,7 +205,7 @@ struct Arguments {
                 defaultValue: Choice = Choice.newInt(0),
                 info: CString = "",
                 needsValue: Int = no_argument,
-                func: ArgCallable,
+                func: function (Choice, Argument, Arguments) -> Void,
                 flag: Ptr[Int] = &defaultFlag,
                 flagVal: Int = 0) {
         this.map.put(shortName[0], this.args.length);
@@ -386,13 +389,22 @@ function process(argc, argv, args: Arguments): Void {
             BOOL =>  currentArg.currentValue = Choice.newBool(str2bool(optarg));
             FLOAT => currentArg.currentValue = Choice.newFloat(str2float(optarg));
         }
-        currentArg.call();
+        currentArg.call(args);
     }
 }
 
 
-function demoFunc(val: Choice): Void {
+function demoFunc(val: Choice, unused1: Argument = Argument.new(), unused2: Arguments = Arguments.new()): Void {
     val.print();
+}
+
+
+function helpHandler(unused: Choice, one: Argument = Argument.new(), all: Arguments = Arguments.new()): Void {
+    if one.func != defaultHandler {
+        one.printAll();
+    } else {
+        all.printAll();
+    }
 }
 
 
@@ -402,7 +414,7 @@ function main(argc: Int, argv: Ptr[Ptr[Char]]) {
     test.add("v", "val", Choice.newStr("abc"), "This is a test", required_argument, demoFunc);
     test.add("a", "aaaa", Choice.newInt(0), "This is the second cli argument", no_argument, demoFunc);
     test.add("n", "new", Choice.newInt(0), "This is the third cli argument", optional_argument, demoFunc);
-    test.add("h", "help", Choice.newInt(0), "This gets help", no_argument, test.printAll);
-    test.printAll();
+    test.add("h", "help", Choice.newInt(0), "This gets help", no_argument, helpHandler);
+    // test.printAll();
     process(argc, argv, test);
 }
