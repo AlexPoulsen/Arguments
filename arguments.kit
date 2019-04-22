@@ -293,6 +293,10 @@ struct Arguments {
     }
 
     function get(c: Char): Argument {
+        // var c_arr: CArray[Char, 40];
+        // printf("%s", c);
+        // sprintf(c_arr, "%c", c);
+        // printf("%c\n", c_arr[0]);
         return this.args[this.map[c]];
     }
 }
@@ -403,11 +407,13 @@ function process(argc, argv, args: Arguments): Void {
         }
 
         var currentArg: Argument = args.get(c);
-        match currentArg.defaultValue.which {
-            INT =>   currentArg.currentValue = Choice.newInt(str2int(optarg));
-            STR =>   currentArg.currentValue = Choice.newStr(optarg);
-            BOOL =>  currentArg.currentValue = Choice.newBool(str2bool(optarg));
-            FLOAT => currentArg.currentValue = Choice.newFloat(str2float(optarg));
+        if currentArg.needsValue != no_argument {
+            match currentArg.defaultValue.which {
+                INT =>   currentArg.currentValue = Choice.newInt(str2int(optarg));
+                STR =>   currentArg.currentValue = Choice.newStr(optarg);
+                BOOL =>  currentArg.currentValue = Choice.newBool(str2bool(optarg));
+                FLOAT => currentArg.currentValue = Choice.newFloat(str2float(optarg));
+            }
         }
         currentArg.call(currentArg, args);
         if c == c'h' {
