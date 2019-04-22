@@ -101,8 +101,8 @@ struct Argument {
     const longName: CString = "__"; // used with --name
     const defaultValue: Choice = Choice.newInt(0); // used with --name
     var currentValue: Choice;
-    var info: CString = "";
-    const needsValue: Int = no_argument;
+    var info: CString;
+    var needsValue: Int;
     var flag: Ptr[Int] = &defaultFlag;
     var flagVal: Int = 0;
     var func: function (Choice, Argument, Arguments) -> Void;
@@ -115,13 +115,16 @@ struct Argument {
                         flag: Ptr[Int] = &defaultFlag,
                         flagVal: Int = 0,
                         func: function (Choice, Argument, Arguments) -> Void = defaultHandler) {
+        // printf("---- ---- new() %d\n", needsValue);
         return struct Self {
             shortName,
             longName,
             defaultValue,
             currentValue: defaultValue,
             info,
+            needsValue,
             flag,
+            flagVal,
             func
         };
     }
@@ -183,8 +186,8 @@ struct Argument {
         }
     }
 
-    function call(args: Arguments) {
-        this.func(this.currentValue, this, args);
+    function call(currentArg: Argument, args: Arguments) {
+        this.func(this.currentValue, currentArg, args);
     }
 }
 
@@ -208,6 +211,7 @@ struct Arguments {
                 func: function (Choice, Argument, Arguments) -> Void,
                 flag: Ptr[Int] = &defaultFlag,
                 flagVal: Int = 0) {
+        // printf("---- add() %d\n", needsValue);
         this.map.put(shortName[0], this.args.length);
         this.args.push(Argument.new(shortName,
                                     longName,
@@ -217,6 +221,7 @@ struct Arguments {
                                     flag,
                                     flagVal,
                                     func));
+        // printf("---- add() (query) %d\n", this.args[this.args.length - 1].needsValue);
     }
 
     function printSep() {
@@ -265,19 +270,25 @@ struct Arguments {
         var out = "";
         for n in this.args {
             if n.needsValue == no_argument {
+                // printf("no_arg - %d\n", n.needsValue);
                 out = strAdd(out, n.shortName);
             } else {
                 if n.needsValue == required_argument {
+                    // printf("req_arg - %d\n", n.needsValue);
                     out = strAdd(strAdd(out, n.shortName), ":");
                 } else {
                     if n.needsValue == optional_argument {
+                        // printf("opt_arg - %d\n", n.needsValue);
                         out = strAdd(strAdd(out, n.shortName), "::");
                     } else {
+                        // printf("bad_arg - %d\n", n.needsValue);
                         printf("Bad value for Self.needsValue: %d", n.needsValue);
                     }
                 }
             }
+            // printf("- %s\n", out);
         }
+        // printf("%s\n", out);
         return out;
     }
 
@@ -319,6 +330,9 @@ function lowercase(s: CString): CString {
 
 
 function str2bool(s: CString): Bool {
+    if s == null {
+        return false;
+    }
     s = lowercase(s);
     match s {
         "true" => return true;
@@ -345,6 +359,9 @@ function str2bool(s: CString): Bool {
 
 
 function str2int(s: CString): Int {
+    if s == null {
+        return 0;
+    }
     var p: Ptr[Char] = s;
     // errno = 0;
     var val = strtoll(s, &p, 10);
@@ -367,6 +384,9 @@ function str2int(s: CString): Int {
 var thisWasSupposedToBeOptional: Ptr[Ptr[Char]];
 
 function str2float(s: CString): Float {
+    if s == null {
+        return 0.0;
+    }
     return strtod(s, &thisWasSupposedToBeOptional);
 }
 
@@ -389,7 +409,24 @@ function process(argc, argv, args: Arguments): Void {
             BOOL =>  currentArg.currentValue = Choice.newBool(str2bool(optarg));
             FLOAT => currentArg.currentValue = Choice.newFloat(str2float(optarg));
         }
-        currentArg.call(args);
+        currentArg.call(currentArg, args);
+        if c == c'h' {
+            if optarg == null {
+                currentArg.call(Argument.new(), args);
+            } else {
+                var guess: Argument = args.get(optarg[0]);
+                if guess.longName == optarg {
+                    currentArg.call(guess, args);
+                } else {
+                    for n in 0 ... args.args.length {
+                        if args.args[n].longName == optarg {
+                            currentArg.call(args.args[n], args);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -412,9 +449,13 @@ function main(argc: Int, argv: Ptr[Ptr[Char]]) {
     // argc: Int, argv: Ptr[Ptr[Char]]
     var test: Arguments = Arguments.new();
     test.add("v", "val", Choice.newStr("abc"), "This is a test", required_argument, demoFunc);
+    // printf("%d\n", test.get(c'v').needsValue);
     test.add("a", "aaaa", Choice.newInt(0), "This is the second cli argument", no_argument, demoFunc);
+    // printf("%d %d\n", test.get(c'v').needsValue, test.get(c'a').needsValue);
     test.add("n", "new", Choice.newInt(0), "This is the third cli argument", optional_argument, demoFunc);
+    // printf("%d %d %d\n", test.get(c'v').needsValue, test.get(c'a').needsValue, test.get(c'n').needsValue);
     test.add("h", "help", Choice.newInt(0), "This gets help", no_argument, helpHandler);
+    // printf("%d %d %d %d\n", test.get(c'v').needsValue, test.get(c'a').needsValue, test.get(c'n').needsValue, test.get(c'h').needsValue);
     // test.printAll();
     process(argc, argv, test);
 }
