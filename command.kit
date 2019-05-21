@@ -56,54 +56,58 @@ struct Command {
         this.sub.push(Command.subNew(command, arguments));
     }
 
-    function getSub(command: CString) {
+    function getSub(command: CString): Command {
         return this.sub[this.map[command]];
     }
-}
 
-
-function process_old(argc: Int, argv: Ptr[Ptr[Char]], args: Arguments): Void {
-    var getOptString: CString = args.toGetOptString();
-    var getOptStruct: Ptr[option] = args.toGetOptStruct();
-    var option_index: Int = 0;
-    while true {
-        var c: Char = getopt_long(argc, argv, getOptString, getOptStruct, &option_index);
-
-        if c == -1_c || c == c'?' {
-            break;
-        }
-
-        var currentArg: Argument = args.get(c);
-        if currentArg.needsValue != no_argument {
-            match currentArg.defaultValue.which {
-                INT =>   currentArg.currentValue = Choice.newInt(str2int(optarg));
-                STR =>   currentArg.currentValue = Choice.newStr(optarg);
-                BOOL =>  currentArg.currentValue = Choice.newBool(str2bool(optarg));
-                FLOAT => currentArg.currentValue = Choice.newFloat(str2float(optarg));
-            }
-        }
-        currentArg.call(currentArg, args);
-        if c == c'h' {
-            if optarg == null {
-                currentArg.call(Argument.new(), args);
-            } else {
-                var guess: Argument = args.get(optarg[0]);
-                if guess.longName == optarg {
-                    currentArg.call(guess, args);
-                } else {
-                    for n in 0 ... args.args.length {
-                        if args.args[n].longName == optarg {
-                            currentArg.call(args.args[n], args);
-                            break;
-                        }
-                    }
-                }
-            }
+    function process(argc: Int, argv: Ptr[Ptr[Char]]): Void {
+        printf("command process\n");
+        if this.map.exists(argv[0]) {  // found matching subcommand
+            this.getSub(argv[0]).process(argc - 1, argv + 1);  // recurse with subcommand
+        } else {  // found no matching subcommand
+            this.args.process(argc - 1, argv);  // call process on `Arguments` instance
         }
     }
 }
 
 
-function process(argc: Int, argv: Ptr[Ptr[Char]], command: Command): Void {
-    printf("%d\n", command.getSub(argv[0]).get(argv[1]).call(argv[2:]));
-}
+// function process_old(argc: Int, argv: Ptr[Ptr[Char]], args: Arguments): Void {
+//     var getOptString: CString = args.toGetOptString();
+//     var getOptStruct: Ptr[option] = args.toGetOptStruct();
+//     var option_index: Int = 0;
+//     while true {
+//         var c: Char = getopt_long(argc, argv, getOptString, getOptStruct, &option_index);
+
+//         if c == -1_c || c == c'?' {
+//             break;
+//         }
+
+//         var currentArg: Argument = args.get(c);
+//         if currentArg.needsValue != no_argument {
+//             match currentArg.defaultValue.which {
+//                 INT =>   currentArg.currentValue = Choice.newInt(str2int(optarg));
+//                 STR =>   currentArg.currentValue = Choice.newStr(optarg);
+//                 BOOL =>  currentArg.currentValue = Choice.newBool(str2bool(optarg));
+//                 FLOAT => currentArg.currentValue = Choice.newFloat(str2float(optarg));
+//             }
+//         }
+//         currentArg.call(currentArg, args);
+//         if c == c'h' {
+//             if optarg == null {
+//                 currentArg.call(Argument.new(), args);
+//             } else {
+//                 var guess: Argument = args.get(optarg[0]);
+//                 if guess.longName == optarg {
+//                     currentArg.call(guess, args);
+//                 } else {
+//                     for n in 0 ... args.args.length {
+//                         if args.args[n].longName == optarg {
+//                             currentArg.call(args.args[n], args);
+//                             break;
+//                         }
+//                     }
+//                 }
+//             }
+//         }
+//     }
+// }

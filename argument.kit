@@ -5,6 +5,7 @@ include "string.h";
 import kit.map;
 import helperfunctions;
 import choice;
+import arguments;
 
 
 var defaultFlag = 0;
@@ -13,13 +14,13 @@ const required_argument: Int = 1;
 const optional_argument: Int = 2;
 
 
-function defaultHandler(c: Choice, a: Argument, a_s: Arguments): Void {}
+function defaultHandler(c: Choice, a: Argument, a_s: Arguments = Arguments.new()): Void {}
 
 
 struct Argument {
-    const shortName: CString = "_"; // used with -n
-    const longName: CString = "__"; // used with --name
-    const defaultValue: Choice = Choice.newInt(0); // used with --name
+    const shortName: CString = "_";  // used with -n
+    const longName: CString = "__";  // used with --name
+    const defaultValue: Choice = Choice.newInt(0);  // used with --name
     var currentValue: Choice;
     var info: CString;
     var needsValue: Int;
@@ -106,7 +107,7 @@ struct Argument {
         }
     }
 
-    function call(currentArg: Argument, args: Arguments) {
-        this.func(this.currentValue, currentArg, args);
+    function call(): Void {
+        this.func(this.currentValue, this, Arguments.new());
     }
 }

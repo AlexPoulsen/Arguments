@@ -10,12 +10,14 @@ import argument;
 
 struct Arguments {
     var args: Vector[Argument];
-    var map: Map[Char, Int];  // gets a lookup value into the args vector
+    var mapS: Map[Char, Int];  // gets a lookup value into the args vector
+    var mapL: Map[CString, Int];  // gets a lookup value into the args vector
 
     static function new() {
         return struct Self {
             args: Vector.new(10),
-            map: Map.new(10)
+            mapS: Map.new(10),
+            mapL: Map.new(10)
         };
     }
 
@@ -28,7 +30,8 @@ struct Arguments {
                 flag: Ptr[Int] = &defaultFlag,
                 flagVal: Int = 0) {
         // printf("---- add() %d\n", needsValue);
-        this.map.put(shortName[0], this.args.length);
+        this.mapS.put(shortName[0], this.args.length);
+        this.mapL.put(longName, this.args.length);
         this.args.push(Argument.new(shortName,
                                     longName,
                                     defaultValue,
@@ -108,11 +111,27 @@ struct Arguments {
         return out;
     }
 
-    function get(c: Char): Argument {
-        // var c_arr: CArray[Char, 40];
-        // printf("%s", c);
-        // sprintf(c_arr, "%c", c);
-        // printf("%c\n", c_arr[0]);
-        return this.args[this.map[c]];
+    function get(s: CString): Argument {
+        return this.args[this.mapL[s]];
+    }
+
+    function call(s: CString): Void {
+        var arg: Argument = this.args[this.mapL[s]];
+        arg.func(arg.currentValue, arg, this);
+    }
+
+    function process(argc: Int, argv: Ptr[Ptr[Char]]): Void {
+        printf("arguments process\n");
+        var argcCache: Int = argc;
+        for n in 0 ... argcCache + 1 {  // loop through argv
+            // printf("%c", *(*(argv + n) + 1));
+            if (*(argv + n))[0] == c'-' {
+                if (*(argv + n))[1] == c'-' {  // --arg
+                    printf("--");
+                } else {  // -a
+                    printf("%c", (*(argv + n))[1]);
+                }
+            }
+        }
     }
 }

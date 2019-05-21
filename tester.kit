@@ -39,5 +39,5 @@ function main(argc: Int, argv: Ptr[Ptr[Char]]) {
     // process(argc, argv, test);
     var command: Command = Command.new(test);
     command.addSubcommand("foo", test2);
-    process(argc, argv, command);
+    command.process(argc, argv);
 }
