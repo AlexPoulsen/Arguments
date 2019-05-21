@@ -1,0 +1,73 @@
+include "getopt.h";
+include "ctype.h";
+include "errno.h";
+include "string.h";
+import kit.map;
+import helperfunctions;
+
+
+enum ChoiceWhich {
+    INT;
+    STR;
+    BOOL;
+    FLOAT;
+    NONE;
+}
+
+
+struct Choice {
+    var intVal: Int;
+    var strVal: CString;
+    var boolVal: Bool;
+    var floatVal: Float;
+    var which: ChoiceWhich = ChoiceWhich.NONE;
+
+    static function newInt(val: Int) {
+        return struct Self {
+            intVal: val,
+            strVal: "",
+            boolVal: false,
+            floatVal: 0.0,
+            which: ChoiceWhich.INT
+        };
+    }
+
+    static function newStr(val: CString) {
+        return struct Self {
+            intVal: 0,
+            strVal: val,
+            boolVal: false,
+            floatVal: 0.0,
+            which: ChoiceWhich.STR
+        };
+    }
+
+    static function newBool(val: Bool) {
+        return struct Self {
+            intVal: 0,
+            strVal: "",
+            boolVal: val,
+            floatVal: 0.0,
+            which: ChoiceWhich.BOOL
+        };
+    }
+
+    static function newFloat(val: Float) {
+        return struct Self {
+            intVal: 0,
+            strVal: "",
+            boolVal: false,
+            floatVal: val,
+            which: ChoiceWhich.FLOAT
+        };
+    }
+
+    function print() {
+        match this.which {
+            INT => printf("%d\n", this.intVal);
+            STR => printf("%s\n", this.strVal);
+            BOOL => printf("%s\n", if this.boolVal then "true" else "false");
+            FLOAT => printf("%f\n", this.floatVal);
+        }
+    }
+}

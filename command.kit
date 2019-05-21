@@ -1,0 +1,109 @@
+include "getopt.h";
+include "ctype.h";
+include "errno.h";
+include "string.h";
+import kit.map;
+import helperfunctions;
+import choice;
+import argument;
+import arguments;
+
+
+struct Command {
+    var sub: Vector[Command];
+    var args: Arguments;
+    const command: CString = "";
+    var map: Map[CString, Int];  // gets a lookup value into the sub vector
+
+    static function new(arguments: Arguments) {
+        return struct Self {
+            sub: Vector.new(4),
+            args: arguments,
+            command: "",
+            map: Map.new(4)
+        };
+    }
+
+    static function subNew(command: CString, arguments: Arguments) {
+        return struct Self {
+            sub: Vector.new(4),
+            args: arguments,
+            command,
+            map: Map.new(4)
+        };
+    }
+
+    function addArg(shortName: CString = "_",
+                longName: CString = "__",
+                defaultValue: Choice = Choice.newInt(0),
+                info: CString = "",
+                needsValue: Int = no_argument,
+                func: function (Choice, Argument, Arguments) -> Void,
+                flag: Ptr[Int] = &defaultFlag,
+                flagVal: Int = 0) {
+        this.args.add(shortName,
+                        longName,
+                        defaultValue,
+                        info,
+                        needsValue,
+                        func,
+                        flag,
+                        flagVal);
+    }
+
+    function addSubcommand(command: CString, arguments: Arguments) {
+        this.map.put(command, this.sub.length);
+        this.sub.push(Command.subNew(command, arguments));
+    }
+
+    function getSub(command: CString) {
+        return this.sub[this.map[command]];
+    }
+}
+
+
+function process_old(argc: Int, argv: Ptr[Ptr[Char]], args: Arguments): Void {
+    var getOptString: CString = args.toGetOptString();
+    var getOptStruct: Ptr[option] = args.toGetOptStruct();
+    var option_index: Int = 0;
+    while true {
+        var c: Char = getopt_long(argc, argv, getOptString, getOptStruct, &option_index);
+
+        if c == -1_c || c == c'?' {
+            break;
+        }
+
+        var currentArg: Argument = args.get(c);
+        if currentArg.needsValue != no_argument {
+            match currentArg.defaultValue.which {
+                INT =>   currentArg.currentValue = Choice.newInt(str2int(optarg));
+                STR =>   currentArg.currentValue = Choice.newStr(optarg);
+                BOOL =>  currentArg.currentValue = Choice.newBool(str2bool(optarg));
+                FLOAT => currentArg.currentValue = Choice.newFloat(str2float(optarg));
+            }
+        }
+        currentArg.call(currentArg, args);
+        if c == c'h' {
+            if optarg == null {
+                currentArg.call(Argument.new(), args);
+            } else {
+                var guess: Argument = args.get(optarg[0]);
+                if guess.longName == optarg {
+                    currentArg.call(guess, args);
+                } else {
+                    for n in 0 ... args.args.length {
+                        if args.args[n].longName == optarg {
+                            currentArg.call(args.args[n], args);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+function process(argc: Int, argv: Ptr[Ptr[Char]], command: Command): Void {
+    printf("%d\n", command.getSub(argv[0]).get(argv[1]).call(argv[2:]));
+}

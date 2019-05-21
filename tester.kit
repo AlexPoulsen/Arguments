@@ -1,0 +1,43 @@
+include "getopt.h";
+include "ctype.h";
+include "errno.h";
+include "string.h";
+import kit.map;
+import helperfunctions;
+import choice;
+import argument;
+import arguments;
+import command;
+
+
+function demoFunc(val: Choice, unused1: Argument = Argument.new(), unused2: Arguments = Arguments.new()): Void {
+    val.print();
+}
+
+
+function helpHandler(unused: Choice, one: Argument = Argument.new(), all: Arguments = Arguments.new()): Void {
+    if one.func != defaultHandler {
+        one.printAll();
+    } else {
+        all.printAll();
+    }
+}
+
+
+function main(argc: Int, argv: Ptr[Ptr[Char]]) {
+    var test: Arguments = Arguments.new();
+    test.add("v", "val", Choice.newStr("abc"), "This is a test", required_argument, demoFunc);
+    test.add("a", "aaaa", Choice.newInt(0), "This is the second cli argument", no_argument, demoFunc);
+    test.add("n", "new", Choice.newInt(0), "This is the third cli argument", optional_argument, demoFunc);
+    test.add("h", "help", Choice.newInt(0), "This gets help", no_argument, helpHandler);
+    var test2: Arguments = Arguments.new();
+    test2.add("b", "blah", Choice.newInt(0), "foo > first arg", optional_argument, demoFunc);
+    test2.add("d", "do", Choice.newInt(0), "foo > second arg", required_argument, demoFunc);
+    test2.add("h", "help", Choice.newInt(0), "This gets help", no_argument, helpHandler);
+    // test.printAll();
+    // process_old(argc, argv, test);
+    // process(argc, argv, test);
+    var command: Command = Command.new(test);
+    command.addSubcommand("foo", test2);
+    process(argc, argv, command);
+}
