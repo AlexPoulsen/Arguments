@@ -302,6 +302,57 @@ struct Arguments {
 }
 
 
+struct Command {
+    var sub: Vector[Command];
+    var args: Arguments;
+    const command: CString = "";
+    var map: Map[CString, Int];  // gets a lookup value into the sub vector
+
+    static function new(arguments: Arguments) {
+        return struct Self {
+            sub: Vector.new(4),
+            args: arguments,
+            command: ""
+        };
+    }
+
+    static function subNew(command: CString, arguments: Arguments) {
+        return struct Self {
+            sub: Vector.new(4),
+            args: arguments,
+            command
+        };
+    }
+
+    function addArg(shortName: CString = "_",
+                longName: CString = "__",
+                defaultValue: Choice = Choice.newInt(0),
+                info: CString = "",
+                needsValue: Int = no_argument,
+                func: function (Choice, Argument, Arguments) -> Void,
+                flag: Ptr[Int] = &defaultFlag,
+                flagVal: Int = 0) {
+        this.args.add(shortName,
+                        longName,
+                        defaultValue,
+                        info,
+                        needsValue,
+                        func,
+                        flag,
+                        flagVal);
+    }
+
+    function addSubcommand(command: CString, arguments: Arguments) {
+        this.map.put(command, this.sub.length);
+        this.sub.push(Command.subNew(command, arguments));
+    }
+
+    function getSub(command: CString) {
+        return this.sub[this.map[command]];
+    }
+}
+
+
 function chr2str(c: CArray[Char], length: Int): CString {
     var out: CString = malloc((length + 1) * sizeof(Char));
     strncpy(out, c, length + 1);
@@ -395,7 +446,7 @@ function str2float(s: CString): Float {
 }
 
 
-function process(argc, argv, args: Arguments): Void {
+function process_old(argc: Int, argv: Ptr[Ptr[Char]], args: Arguments): Void {
     var getOptString: CString = args.toGetOptString();
     var getOptStruct: Ptr[option] = args.toGetOptStruct();
     var option_index: Int = 0;
@@ -437,6 +488,14 @@ function process(argc, argv, args: Arguments): Void {
 }
 
 
+function process(argc: Int, argv: Ptr[Ptr[Char]], command: Command): Void {
+    printf("%d\n", argc);
+    // for i in 1 ... argc {
+    //     printf("%s ", argv[i]);
+    // }
+}
+
+
 function demoFunc(val: Choice, unused1: Argument = Argument.new(), unused2: Arguments = Arguments.new()): Void {
     val.print();
 }
@@ -452,16 +511,19 @@ function helpHandler(unused: Choice, one: Argument = Argument.new(), all: Argume
 
 
 function main(argc: Int, argv: Ptr[Ptr[Char]]) {
-    // argc: Int, argv: Ptr[Ptr[Char]]
     var test: Arguments = Arguments.new();
     test.add("v", "val", Choice.newStr("abc"), "This is a test", required_argument, demoFunc);
-    // printf("%d\n", test.get(c'v').needsValue);
     test.add("a", "aaaa", Choice.newInt(0), "This is the second cli argument", no_argument, demoFunc);
-    // printf("%d %d\n", test.get(c'v').needsValue, test.get(c'a').needsValue);
     test.add("n", "new", Choice.newInt(0), "This is the third cli argument", optional_argument, demoFunc);
-    // printf("%d %d %d\n", test.get(c'v').needsValue, test.get(c'a').needsValue, test.get(c'n').needsValue);
     test.add("h", "help", Choice.newInt(0), "This gets help", no_argument, helpHandler);
-    // printf("%d %d %d %d\n", test.get(c'v').needsValue, test.get(c'a').needsValue, test.get(c'n').needsValue, test.get(c'h').needsValue);
+    var test2: Arguments = Arguments.new();
+    test2.add("b", "blah", Choice.newInt(0), "foo > first arg", optional_argument, demoFunc);
+    test2.add("d", "do", Choice.newInt(0), "foo > second arg", required_argument, demoFunc);
+    test2.add("h", "help", Choice.newInt(0), "This gets help", no_argument, helpHandler);
     // test.printAll();
-    process(argc, argv, test);
+    // process_old(argc, argv, test);
+    // process(argc, argv, test);
+    var command: Command = Command.new(test);
+    command.addSubcommand("foo", test2);
+    process(argc, argv, command);
 }
