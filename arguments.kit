@@ -131,11 +131,11 @@ struct Arguments {
     }
 
     function callL(s: CString): Void {
-        printf("callL: %s ", s);
+        // printf("callL: %s ", s);
         if this.mapL.exists(s) {
             var arg: Argument = this.args[this.mapL[s]];
-            printf("callL: ");
-            arg.currentValue.print();
+            // printf("callL: ");
+            // arg.currentValue.print();
             arg.func(arg.currentValue, arg, this);
         } else {
             printf("callL failed, no argument exists for ");
@@ -166,24 +166,25 @@ struct Arguments {
                 skip = false;
                 continue;
             }
-            printf("[%d]\n", n);
-            printf("%s\n", (*(argv + n)));
+            // printf("[%d]\n", n);
+            // printf("%s\n", (*(argv + n)));
             if (*(argv + n))[0] == c'-' {
                 if (*(argv + n))[1] == c'-' {  // --arg
                     // printf("(--) %s ", (*(argv + n)) + 2);
                     str = ((*(argv + n)) + 2): CString;
-                    printf("(%s)\n", str);
+                    // printf("(%s)\n", str);
                     arg = this.getL(str);
-                    for n in 0 ... this.args.length {
-                        printf("in proc %s, %c\n", this.args[n].longName, this.args[n].shortName);
-                    }
+                    // for n in 0 ... this.args.length {
+                    //     printf("in proc %s, %c\n", this.args[n].longName, this.args[n].shortName);
+                    // }
                     // argcCache--;
                     skip = true;
                     value = (*(argv + n + 1));
                     // printf("%s", value);
                     arg.setValueFromString(value);
-                    printf("--");
-                    arg.currentValue.print();
+                    // printf("--");
+                    // arg.currentValue.print();
+                    this.args[this.mapL[str]] = arg;
                     this.callL(str);
                 } else {  // -a
                     // printf("(-) %s ", (*(argv + n)) + 1);
@@ -191,19 +192,20 @@ struct Arguments {
                     var len: Int = strlen(str);
                     if len > 1 {
                         for n in 0 ... len {
-                            printf("(%c)\n", str[n]);
+                            // printf("(%c)\n", str[n]);
                             this.callS(str[n]);
                         }
                     } else {
                         // argcCache--;
                         skip = true;
-                        printf("(%c)\n", str[0]);
+                        // printf("(%c)\n", str[0]);
                         arg = this.getS(str[0]);
                         value = (*(argv + n + 1));
                         // printf("%s", value);
                         arg.setValueFromString(value);
-                        printf("-");
-                        arg.currentValue.print();
+                        // printf("-");
+                        // arg.currentValue.print();
+                        this.args[this.mapS[str[0]]] = arg;
                         this.callS(str[0]);
                     }
                 }
