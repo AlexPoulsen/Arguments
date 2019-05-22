@@ -1,4 +1,4 @@
-include "getopt.h";
+// include "getopt.h";
 include "ctype.h";
 include "errno.h";
 include "string.h";
@@ -62,12 +62,23 @@ struct Choice {
         };
     }
 
+    static function new() {
+        return struct Self {
+            intVal: 0,
+            strVal: "",
+            boolVal: false,
+            floatVal: 0.0,
+            which: ChoiceWhich.NONE
+        };
+    }
+
     function print() {
         match this.which {
             INT => printf("%d\n", this.intVal);
             STR => printf("%s\n", this.strVal);
             BOOL => printf("%s\n", if this.boolVal then "true" else "false");
             FLOAT => printf("%f\n", this.floatVal);
+            NONE => printf("No value\n");
         }
     }
 }

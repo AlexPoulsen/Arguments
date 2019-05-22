@@ -1,4 +1,4 @@
-include "getopt.h";
+// include "getopt.h";
 include "ctype.h";
 include "errno.h";
 include "string.h";
@@ -14,6 +14,17 @@ function strAdd(one: CString, two: CString) {
 
 
 function chr2str(c: CArray[Char], length: Int): CString {
+    var out: CString = malloc((length + 1) * sizeof(Char));
+    strncpy(out, c, length + 1);
+    out[length + 1] = c'\0';
+    return out;
+}
+
+
+function chrPtr2str(c: Ptr[Char], length: Int = -1): CString {
+    if length == -1 {
+        length = strlen(c);
+    }
     var out: CString = malloc((length + 1) * sizeof(Char));
     strncpy(out, c, length + 1);
     out[length + 1] = c'\0';

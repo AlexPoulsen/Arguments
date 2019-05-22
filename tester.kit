@@ -1,4 +1,4 @@
-include "getopt.h";
+// include "getopt.h";
 include "ctype.h";
 include "errno.h";
 include "string.h";
@@ -11,6 +11,7 @@ import command;
 
 
 function demoFunc(val: Choice, unused1: Argument = Argument.new(), unused2: Arguments = Arguments.new()): Void {
+    printf("demoFunc ");
     val.print();
 }
 
@@ -26,18 +27,39 @@ function helpHandler(unused: Choice, one: Argument = Argument.new(), all: Argume
 
 function main(argc: Int, argv: Ptr[Ptr[Char]]) {
     var test: Arguments = Arguments.new();
-    test.add("v", "val", Choice.newStr("abc"), "This is a test", required_argument, demoFunc);
-    test.add("a", "aaaa", Choice.newInt(0), "This is the second cli argument", no_argument, demoFunc);
-    test.add("n", "new", Choice.newInt(0), "This is the third cli argument", optional_argument, demoFunc);
-    test.add("h", "help", Choice.newInt(0), "This gets help", no_argument, helpHandler);
+    test.add(c'v', "val", Choice.newStr("abc"), "This is a test", required_argument, demoFunc);
+    test.add(c'a', "aaaa", Choice.newInt(0), "This is the second cli argument", no_argument, demoFunc);
+    test.add(c'n', "new", Choice.newInt(0), "This is the third cli argument", optional_argument, demoFunc);
+    test.add(c'h', "help", Choice.newInt(0), "This gets help", no_argument, helpHandler);
     var test2: Arguments = Arguments.new();
-    test2.add("b", "blah", Choice.newInt(0), "foo > first arg", optional_argument, demoFunc);
-    test2.add("d", "do", Choice.newInt(0), "foo > second arg", required_argument, demoFunc);
-    test2.add("h", "help", Choice.newInt(0), "This gets help", no_argument, helpHandler);
+    test2.add(c'b', "blah", Choice.newInt(0), "foo > first arg", optional_argument, demoFunc);
+    test2.add(c'd', "do", Choice.newInt(0), "foo > second arg", required_argument, demoFunc);
+    test2.add(c'h', "help", Choice.newInt(0), "This gets help", no_argument, helpHandler);
     // test.printAll();
     // process_old(argc, argv, test);
     // process(argc, argv, test);
     var command: Command = Command.new(test);
     command.addSubcommand("foo", test2);
+    // printf("%d", command.getSubcommand("foo").args.mapL.length);
+    for n in 0 ... command.getSubcommand("foo").args.args.length {
+        printf("before proc ");
+        printf("foo %s ", command.getSubcommand("foo").args.args[n].longName);
+        command.getSubcommand("foo").args.args[n].currentValue.print();
+    }
+    for n in 0 ... command.args.args.length {
+        printf("before proc ");
+        printf("test %s ", command.args.args[n].longName);
+        command.args.args[n].currentValue.print();
+    }
     command.process(argc, argv);
+    for n in 0 ... command.getSubcommand("foo").args.args.length {
+        printf("after proc ");
+        printf("foo %s ", command.getSubcommand("foo").args.args[n].longName);
+        command.getSubcommand("foo").args.args[n].currentValue.print();
+    }
+    for n in 0 ... command.args.args.length {
+        printf("after proc ");
+        printf("test %s ", command.args.args[n].longName);
+        command.args.args[n].currentValue.print();
+    }
 }

@@ -1,4 +1,4 @@
-include "getopt.h";
+// include "getopt.h";
 include "ctype.h";
 include "errno.h";
 include "string.h";
@@ -6,6 +6,7 @@ import kit.map;
 import helperfunctions;
 import choice;
 import argument;
+import kitten.xs_Rounding;
 
 
 struct Arguments {
@@ -21,7 +22,7 @@ struct Arguments {
         };
     }
 
-    function add(shortName: CString = "_",
+    function add(shortName: Char = c'_',
                 longName: CString = "__",
                 defaultValue: Choice = Choice.newInt(0),
                 info: CString = "",
@@ -30,7 +31,7 @@ struct Arguments {
                 flag: Ptr[Int] = &defaultFlag,
                 flagVal: Int = 0) {
         // printf("---- add() %d\n", needsValue);
-        this.mapS.put(shortName[0], this.args.length);
+        this.mapS.put(shortName, this.args.length);
         this.mapL.put(longName, this.args.length);
         this.args.push(Argument.new(shortName,
                                     longName,
@@ -43,7 +44,7 @@ struct Arguments {
         // printf("---- add() (query) %d\n", this.args[this.args.length - 1].needsValue);
     }
 
-    function printSep() {
+    inline function printSep() {
         printf("----------------------------------------\n");
     }
 
@@ -71,65 +72,140 @@ struct Arguments {
         printf("+---------+-----------------------------\n");
     }
 
-    function toGetOptStruct(): Ptr[option] {
-        var outVec: Vector[option] = Vector.new(this.args.length);
-        for n in this.args {
-            outVec.push(n.toGetOptStruct());
+    // function toGetOptStruct(): Ptr[option] {
+    //     var outVec: Vector[option] = Vector.new(this.args.length);
+    //     for n in this.args {
+    //         outVec.push(n.toGetOptStruct());
+    //     }
+    //     var blank = struct option {name: "", has_arg: 0, flag: null, val: 0};
+    //     outVec.push(blank);  // was in the example, so i'm including it here
+    //     var out: Ptr[option] = malloc(outVec.length * sizeof(option));
+    //     for n in 0 ... outVec.length {
+    //         out[n] = outVec[n] as option;
+    //     }
+    //     return out;
+    // }
+
+    // function toGetOptString(): CString {
+    //     var out = "";
+    //     for n in this.args {
+    //         if n.needsValue == no_argument {
+    //             // printf("no_arg - %d\n", n.needsValue);
+    //             out = strAdd(out, n.shortName);
+    //         } else {
+    //             if n.needsValue == required_argument {
+    //                 // printf("req_arg - %d\n", n.needsValue);
+    //                 out = strAdd(strAdd(out, n.shortName), ":");
+    //             } else {
+    //                 if n.needsValue == optional_argument {
+    //                     // printf("opt_arg - %d\n", n.needsValue);
+    //                     out = strAdd(strAdd(out, n.shortName), "::");
+    //                 } else {
+    //                     // printf("bad_arg - %d\n", n.needsValue);
+    //                     printf("Bad value for Self.needsValue: %d", n.needsValue);
+    //                 }
+    //             }
+    //         }
+    //         // printf("- %s\n", out);
+    //     }
+    //     // printf("%s\n", out);
+    //     return out;
+    // }
+
+    function getL(s: CString): Argument {
+        if this.mapL.exists(s) {
+            return this.args[this.mapL[s]];
+        } else {
+            printf("No matching argument found.\n");
+            return Argument.new();
         }
-        var blank = struct option {name: "", has_arg: 0, flag: null, val: 0};
-        outVec.push(blank);  // was in the example, so i'm including it here
-        var out: Ptr[option] = malloc(outVec.length * sizeof(option));
-        for n in 0 ... outVec.length {
-            out[n] = outVec[n] as option;
-        }
-        return out;
     }
 
-    function toGetOptString(): CString {
-        var out = "";
-        for n in this.args {
-            if n.needsValue == no_argument {
-                // printf("no_arg - %d\n", n.needsValue);
-                out = strAdd(out, n.shortName);
-            } else {
-                if n.needsValue == required_argument {
-                    // printf("req_arg - %d\n", n.needsValue);
-                    out = strAdd(strAdd(out, n.shortName), ":");
-                } else {
-                    if n.needsValue == optional_argument {
-                        // printf("opt_arg - %d\n", n.needsValue);
-                        out = strAdd(strAdd(out, n.shortName), "::");
-                    } else {
-                        // printf("bad_arg - %d\n", n.needsValue);
-                        printf("Bad value for Self.needsValue: %d", n.needsValue);
-                    }
-                }
-            }
-            // printf("- %s\n", out);
+    function getS(c: Char): Argument {
+        if this.mapS.exists(c) {
+            return this.args[this.mapS[c]];
+        } else {
+            printf("No matching argument found.\n");
+            return Argument.new();
         }
-        // printf("%s\n", out);
-        return out;
     }
 
-    function get(s: CString): Argument {
-        return this.args[this.mapL[s]];
+    function callL(s: CString): Void {
+        printf("callL: %s ", s);
+        if this.mapL.exists(s) {
+            var arg: Argument = this.args[this.mapL[s]];
+            printf("callL: ");
+            arg.currentValue.print();
+            arg.func(arg.currentValue, arg, this);
+        } else {
+            printf("callL failed, no argument exists for ");
+            printf("%s\n", s);
+        }
     }
 
-    function call(s: CString): Void {
-        var arg: Argument = this.args[this.mapL[s]];
-        arg.func(arg.currentValue, arg, this);
+    function callS(c: Char): Void {
+        if this.mapS.exists(c) {
+            var arg: Argument = this.args[this.mapS[c]];
+            arg.func(arg.currentValue, arg, this);
+        } else {
+            printf("callS failed, no argument exists for ");
+            printf("%c\n", c);
+        }
     }
 
     function process(argc: Int, argv: Ptr[Ptr[Char]]): Void {
-        printf("arguments process\n");
+        // printf("arguments process\n");
         var argcCache: Int = argc;
+        var str: CString;
+        var arg: Argument;
+        var value: CString;
+        var skip: Bool = false;
+        var valuestr: CString;
         for n in 0 ... argcCache + 1 {  // loop through argv
-            // printf("%c", *(*(argv + n) + 1));
+            if skip {
+                skip = false;
+                continue;
+            }
+            printf("[%d]\n", n);
+            printf("%s\n", (*(argv + n)));
             if (*(argv + n))[0] == c'-' {
                 if (*(argv + n))[1] == c'-' {  // --arg
+                    // printf("(--) %s ", (*(argv + n)) + 2);
+                    str = ((*(argv + n)) + 2): CString;
+                    printf("(%s)\n", str);
+                    arg = this.getL(str);
+                    for n in 0 ... this.args.length {
+                        printf("in proc %s, %c\n", this.args[n].longName, this.args[n].shortName);
+                    }
+                    // argcCache--;
+                    skip = true;
+                    value = (*(argv + n + 1));
+                    // printf("%s", value);
+                    arg.setValueFromString(value);
                     printf("--");
+                    arg.currentValue.print();
+                    this.callL(str);
                 } else {  // -a
-                    printf("%c", (*(argv + n))[1]);
+                    // printf("(-) %s ", (*(argv + n)) + 1);
+                    str = ((*(argv + n)) + 1): CString;
+                    var len: Int = strlen(str);
+                    if len > 1 {
+                        for n in 0 ... len {
+                            printf("(%c)\n", str[n]);
+                            this.callS(str[n]);
+                        }
+                    } else {
+                        // argcCache--;
+                        skip = true;
+                        printf("(%c)\n", str[0]);
+                        arg = this.getS(str[0]);
+                        value = (*(argv + n + 1));
+                        // printf("%s", value);
+                        arg.setValueFromString(value);
+                        printf("-");
+                        arg.currentValue.print();
+                        this.callS(str[0]);
+                    }
                 }
             }
         }

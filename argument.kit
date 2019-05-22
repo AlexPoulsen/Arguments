@@ -1,4 +1,4 @@
-include "getopt.h";
+// include "getopt.h";
 include "ctype.h";
 include "errno.h";
 include "string.h";
@@ -18,30 +18,30 @@ function defaultHandler(c: Choice, a: Argument, a_s: Arguments = Arguments.new()
 
 
 struct Argument {
-    const shortName: CString = "_";  // used with -n
+    const shortName: Char = c'_';  // used with -n
     const longName: CString = "__";  // used with --name
-    const defaultValue: Choice = Choice.newInt(0);  // used with --name
+    const defaultValue: Choice = Choice.new();  // used with --name
     var currentValue: Choice;
     var info: CString;
     var needsValue: Int;
     var flag: Ptr[Int] = &defaultFlag;
     var flagVal: Int = 0;
-    var func: function (Choice, Argument, Arguments) -> Void;
+    var func: function(Choice, Argument, Arguments) -> Void;
 
-    static function new(shortName: CString = "_",
+    static function new(shortName: Char = c'_',
                         longName: CString = "__",
-                        defaultValue: Choice = Choice.newInt(0),
+                        defaultValue: Choice = Choice.new(),
                         info: CString = "",
                         needsValue: Int = no_argument,
                         flag: Ptr[Int] = &defaultFlag,
                         flagVal: Int = 0,
-                        func: function (Choice, Argument, Arguments) -> Void = defaultHandler) {
+                        func: function(Choice, Argument, Arguments) -> Void = defaultHandler) {
         // printf("---- ---- new() %d\n", needsValue);
         return struct Self {
             shortName,
             longName,
             defaultValue,
-            currentValue: defaultValue,
+            currentValue: Choice.new(),
             info,
             needsValue,
             flag,
@@ -70,7 +70,7 @@ struct Argument {
         }
     }
 
-    function printSep() {
+    inline function printSep() {
         printf("----------------------------------------\n");
     }
 
@@ -89,25 +89,40 @@ struct Argument {
         this.printDefault();
     }
 
-    function toGetOptStruct(): option {
-        if this.flag != &defaultFlag {
-            return struct option {
-                name: this.longName,
-                has_arg: this.needsValue,
-                flag: null,
-                val: this.shortName[0]
-            };
-        } else {
-            return struct option {
-                name: this.longName,
-                has_arg: this.needsValue,
-                flag: this.flag,
-                val: this.flagVal
-            };
+    // function toGetOptStruct(): option {
+    //     if this.flag != &defaultFlag {
+    //         return struct option {
+    //             name: this.longName,
+    //             has_arg: this.needsValue,
+    //             flag: null,
+    //             val: this.shortName[0]
+    //         };
+    //     } else {
+    //         return struct option {
+    //             name: this.longName,
+    //             has_arg: this.needsValue,
+    //             flag: this.flag,
+    //             val: this.flagVal
+    //         };
+    //     }
+    // }
+
+    function call(value: Choice = Choice.new()): Void {
+        if value.which == ChoiceWhich.NONE {
+            value = this.currentValue;
         }
+        this.func(value, this, Arguments.new());
     }
 
-    function call(): Void {
-        this.func(this.currentValue, this, Arguments.new());
+    function setValueFromString(s: CString) {
+        // printf("setValueFromString\n");
+        match this.defaultValue.which {
+            INT => this.currentValue = Choice.newInt(str2int(s));
+            STR => this.currentValue = Choice.newStr(s);
+            BOOL => this.currentValue = Choice.newBool(str2bool(s));
+            FLOAT => this.currentValue = Choice.newFloat(str2float(s));
+            NONE => printf("ERROR: `this.defaultValue.which` is set to NONE\n");
+        }
+        this.currentValue.print();
     }
 }

@@ -1,4 +1,4 @@
-include "getopt.h";
+// include "getopt.h";
 include "ctype.h";
 include "errno.h";
 include "string.h";
@@ -33,7 +33,7 @@ struct Command {
         };
     }
 
-    function addArg(shortName: CString = "_",
+    function addArg(shortName: Char = c'_',
                 longName: CString = "__",
                 defaultValue: Choice = Choice.newInt(0),
                 info: CString = "",
@@ -56,15 +56,18 @@ struct Command {
         this.sub.push(Command.subNew(command, arguments));
     }
 
-    function getSub(command: CString): Command {
+    function getSubcommand(command: CString): Command {
         return this.sub[this.map[command]];
     }
 
     function process(argc: Int, argv: Ptr[Ptr[Char]]): Void {
-        printf("command process\n");
-        if this.map.exists(argv[0]) {  // found matching subcommand
-            this.getSub(argv[0]).process(argc - 1, argv + 1);  // recurse with subcommand
+        // printf("command process\n");
+        printf("{{%s}}\n", argv[1]);
+        if this.map.exists(argv[1]) {  // found matching subcommand
+            printf("found matching subcommand\n");
+            this.getSubcommand(argv[1]).process(argc - 1, argv + 1);  // recurse with subcommand
         } else {  // found no matching subcommand
+            printf("found no matching subcommand\n");
             this.args.process(argc - 1, argv);  // call process on `Arguments` instance
         }
     }
