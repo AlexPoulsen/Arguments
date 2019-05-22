@@ -27,6 +27,7 @@ struct Argument {
     var flag: Ptr[Int] = &defaultFlag;
     var flagVal: Int = 0;
     var func: function(Choice, Argument, Arguments) -> Void;
+    var initialized: Bool = false;
 
     static function new(shortName: Char = c'_',
                         longName: CString = "__",
@@ -46,7 +47,8 @@ struct Argument {
             needsValue,
             flag,
             flagVal,
-            func
+            func,
+            initialized: true
         };
     }
 
