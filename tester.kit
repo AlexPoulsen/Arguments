@@ -10,8 +10,8 @@ import arguments;
 import command;
 
 
-function demoFunc(val: Choice, unused1: Argument = Argument.new(), unused2: Arguments = Arguments.new()): Void {
-    printf("demoFunc ");
+function demoFunc(val: Choice, arg: Argument = Argument.new(), unused2: Arguments = Arguments.new()): Void {
+    printf("%s: ", arg.longName);
     val.print();
 }
 
@@ -41,25 +41,25 @@ function main(argc: Int, argv: Ptr[Ptr[Char]]) {
     var command: Command = Command.new(test);
     command.addSubcommand("foo", test2);
     // printf("%d", command.getSubcommand("foo").args.mapL.length);
-    for n in 0 ... command.getSubcommand("foo").args.args.length {
-        printf("before proc ");
-        printf("foo %s ", command.getSubcommand("foo").args.args[n].longName);
-        command.getSubcommand("foo").args.args[n].currentValue.print();
-    }
-    for n in 0 ... command.args.args.length {
-        printf("before proc ");
-        printf("test %s ", command.args.args[n].longName);
-        command.args.args[n].currentValue.print();
-    }
+    // for n in 0 ... command.getSubcommand("foo").args.args.length {
+    //     printf("before proc ");
+    //     printf("foo %s ", command.getSubcommand("foo").args.args[n].longName);
+    //     command.getSubcommand("foo").args.args[n].currentValue.print();
+    // }
+    // for n in 0 ... command.args.args.length {
+    //     printf("before proc ");
+    //     printf("test %s ", command.args.args[n].longName);
+    //     command.args.args[n].currentValue.print();
+    // }
     command.process(argc, argv);
-    for n in 0 ... command.getSubcommand("foo").args.args.length {
-        printf("after proc ");
-        printf("foo %s ", command.getSubcommand("foo").args.args[n].longName);
-        command.getSubcommand("foo").args.args[n].currentValue.print();
-    }
-    for n in 0 ... command.args.args.length {
-        printf("after proc ");
-        printf("test %s ", command.args.args[n].longName);
-        command.args.args[n].currentValue.print();
-    }
+    // for n in 0 ... command.getSubcommand("foo").args.args.length {
+    //     printf("after proc ");
+    //     printf("foo %s ", command.getSubcommand("foo").args.args[n].longName);
+    //     command.getSubcommand("foo").args.args[n].currentValue.print();
+    // }
+    // for n in 0 ... command.args.args.length {
+    //     printf("after proc ");
+    //     printf("test %s ", command.args.args[n].longName);
+    //     command.args.args[n].currentValue.print();
+    // }
 }

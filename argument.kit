@@ -79,7 +79,7 @@ struct Argument {
     }
 
     function printOption() {
-        printf("| -%s      | --%s\n", this.shortName, this.longName);
+        printf("| -%c      | --%s\n", this.shortName, this.longName);
     }
 
     function printAll() {
@@ -88,24 +88,6 @@ struct Argument {
         this.printOption();
         this.printDefault();
     }
-
-    // function toGetOptStruct(): option {
-    //     if this.flag != &defaultFlag {
-    //         return struct option {
-    //             name: this.longName,
-    //             has_arg: this.needsValue,
-    //             flag: null,
-    //             val: this.shortName[0]
-    //         };
-    //     } else {
-    //         return struct option {
-    //             name: this.longName,
-    //             has_arg: this.needsValue,
-    //             flag: this.flag,
-    //             val: this.flagVal
-    //         };
-    //     }
-    // }
 
     function call(value: Choice = Choice.new()): Void {
         if value.which == ChoiceWhich.NONE {

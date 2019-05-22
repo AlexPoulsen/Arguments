@@ -72,46 +72,6 @@ struct Arguments {
         printf("+---------+-----------------------------\n");
     }
 
-    // function toGetOptStruct(): Ptr[option] {
-    //     var outVec: Vector[option] = Vector.new(this.args.length);
-    //     for n in this.args {
-    //         outVec.push(n.toGetOptStruct());
-    //     }
-    //     var blank = struct option {name: "", has_arg: 0, flag: null, val: 0};
-    //     outVec.push(blank);  // was in the example, so i'm including it here
-    //     var out: Ptr[option] = malloc(outVec.length * sizeof(option));
-    //     for n in 0 ... outVec.length {
-    //         out[n] = outVec[n] as option;
-    //     }
-    //     return out;
-    // }
-
-    // function toGetOptString(): CString {
-    //     var out = "";
-    //     for n in this.args {
-    //         if n.needsValue == no_argument {
-    //             // printf("no_arg - %d\n", n.needsValue);
-    //             out = strAdd(out, n.shortName);
-    //         } else {
-    //             if n.needsValue == required_argument {
-    //                 // printf("req_arg - %d\n", n.needsValue);
-    //                 out = strAdd(strAdd(out, n.shortName), ":");
-    //             } else {
-    //                 if n.needsValue == optional_argument {
-    //                     // printf("opt_arg - %d\n", n.needsValue);
-    //                     out = strAdd(strAdd(out, n.shortName), "::");
-    //                 } else {
-    //                     // printf("bad_arg - %d\n", n.needsValue);
-    //                     printf("Bad value for Self.needsValue: %d", n.needsValue);
-    //                 }
-    //             }
-    //         }
-    //         // printf("- %s\n", out);
-    //     }
-    //     // printf("%s\n", out);
-    //     return out;
-    // }
-
     function getL(s: CString): Argument {
         if this.mapL.exists(s) {
             return this.args[this.mapL[s]];
