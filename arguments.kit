@@ -76,7 +76,7 @@ struct Arguments {
         if this.mapL.exists(s) {
             return this.args[this.mapL[s]];
         } else {
-            printf("No matching argument found.\n");
+            printf("No matching argument found `%s`.\n", s);
             var out: Argument = Argument.new();
             out.initialized = false;
             return out;
@@ -87,7 +87,7 @@ struct Arguments {
         if this.mapS.exists(c) {
             return this.args[this.mapS[c]];
         } else {
-            printf("No matching argument found.\n");
+            printf("No matching argument found for `%c`.\n", c);
             var out: Argument = Argument.new();
             out.initialized = false;
             return out;
@@ -102,7 +102,7 @@ struct Arguments {
             // arg.currentValue.print();
             arg.func(arg.currentValue, arg, this);
         } else {
-            printf("callL failed, no argument exists for ");
+            printf("`callL` failed, no argument exists for ");
             printf("%s\n", s);
         }
     }
@@ -112,7 +112,7 @@ struct Arguments {
             var arg: Argument = this.args[this.mapS[c]];
             arg.func(arg.currentValue, arg, this);
         } else {
-            printf("callS failed, no argument exists for ");
+            printf("`callS` failed, no argument exists for ");
             printf("%c\n", c);
         }
     }
