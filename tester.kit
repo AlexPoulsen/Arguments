@@ -1,9 +1,12 @@
-import kit.map;
-import helperfunctions;
-import choice;
-import argument;
-import arguments;
-import command;
+import src.helperfunctions;
+import src.choice;
+import src.argument;
+import src.arguments;
+import src.command;
+// import kitten.arguments;
+// import kitten._kitten_packages.arguments.src._import_all;
+// importfrom("kitten.arguments");
+// import kitten.arguments.*;
 
 
 function demoFunc(val: Choice, arg: Argument = Argument.new(), unused2: Arguments = Arguments.new()): Void {
@@ -24,13 +27,13 @@ function helpHandler(unused: Choice, one: Argument = Argument.new(), all: Argume
 function main(argc: Int, argv: Ptr[Ptr[Char]]) {
     var test: Arguments = Arguments.new();
     test.add(c'v', "val", Choice.newStr("abc"), "This is a test", required_argument, demoFunc);
-    test.add(c'a', "aaaa", Choice.newInt(0), "This is the second cli argument", no_argument, demoFunc);
+    test.add(c'a', "aaaa", Choice.new(0), "This is the second cli argument", no_argument, demoFunc);
     test.add(c'n', "new", Choice.newInt(0), "This is the third cli argument", optional_argument, demoFunc);
-    test.add(c'h', "help", Choice.newInt(0), "This gets help", no_argument, helpHandler);
+    test.add(c'h', "help", Choice.new(0), "This gets help", no_argument, helpHandler);
     var test2: Arguments = Arguments.new();
     test2.add(c'b', "blah", Choice.newInt(0), "foo > first arg", optional_argument, demoFunc);
     test2.add(c'd', "do", Choice.newInt(0), "foo > second arg", required_argument, demoFunc);
-    test2.add(c'h', "help", Choice.newInt(0), "This gets help", no_argument, helpHandler);
+    test2.add(c'h', "help", Choice.new(0), "This gets help", no_argument, helpHandler);
     // test.printAll();
     // process_old(argc, argv, test);
     // process(argc, argv, test);

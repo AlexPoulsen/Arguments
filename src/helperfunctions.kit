@@ -2,6 +2,9 @@ include "ctype.h";
 import kit.map;
 
 
+/**
+ * Appends two strings
+ */
 function strAdd(one: CString, two: CString) {
     var out = malloc(one.length + two.length + 1);
     strcpy(out, one);
@@ -10,6 +13,9 @@ function strAdd(one: CString, two: CString) {
 }
 
 
+/**
+ * Converts char attay to string
+ */
 function chr2str(c: CArray[Char], length: Int): CString {
     var out: CString = malloc((length + 1) * sizeof(Char));
     strncpy(out, c, length + 1);
@@ -18,6 +24,9 @@ function chr2str(c: CArray[Char], length: Int): CString {
 }
 
 
+/**
+ * Converts char pointer to string
+ */
 function chrPtr2str(c: Ptr[Char], length: Int = -1): CString {
     if length == -1 {
         length = strlen(c);
