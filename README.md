@@ -1,2 +1,2 @@
 # Arguments
-Kit argument parser that wraps getopt and simplifies usage. WIP
+Kit argument parser that wraps getopt and simplifies usage.
