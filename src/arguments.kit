@@ -13,7 +13,7 @@ struct Arguments {
     // var funcExtraArgs: function (Choice, Argument, Arguments) -> Void;
     var handler: Box[Handler];
 
-    static function new(handler: Box[Handler] = Handler.new()) {
+    static function new(handler: Box[Handler]) {
         return struct Self {
             args: Vector.new(10),
             mapS: Map.new(10),
@@ -78,7 +78,7 @@ struct Arguments {
             return this.args[this.mapL[s]];
         } else {
             printf("No matching argument found `%s`.\n", s);
-            var out: Argument = Argument.new();
+            var out: Argument = Argument.new(c'_', "__", Choice.new(), "", no_argument, &defaultFlag, 0, DefaultHandler.new());
             out.initialized = false;
             return out;
         }
@@ -89,7 +89,7 @@ struct Arguments {
             return this.args[this.mapS[c]];
         } else {
             printf("No matching argument found for `%c`.\n", c);
-            var out: Argument = Argument.new();
+            var out: Argument = Argument.new(c'_', "__", Choice.new(), "", no_argument, &defaultFlag, 0, DefaultHandler.new());
             out.initialized = false;
             return out;
         }

@@ -16,20 +16,20 @@ import src.handler;
 // }
 
 
-struct ArgResults {
+struct Res1 {
     var values: Vector[CString];
     var valueCount: Int = 0;
-}
 
-
-implement Handler for ArgResults {
-    static function new(): ArgResults {
+    static function new(): Res1 {
         return struct Self {
             values: Vector.new(10),
             valueCount: 0
         };
     }
+}
 
+
+implement Handler for Res1 {
     function nothing(cmd: Command): Void {
         printf("empty input\n");
     }
@@ -38,19 +38,77 @@ implement Handler for ArgResults {
         // printf("extra: `");
         // choice.print();
         // printf("`\n");
-        var str: CString;
+        var capacity: Int = 256;
+        var str: Ptr[Char] = *(mallocator.calloc(capacity)): Ptr[Char];
         match choice.which {
-            INT => sprintf(str, "%d\n", choice.intVal);
-            STR => sprintf(str, "%s\n", choice.strVal);
-            BOOL => sprintf(str, "%s\n", if choice.boolVal then "true" else "false");
-            FLOAT => sprintf(str, "%f\n", choice.floatVal);
-            NONE => sprintf(str, "No value\n");
+            INT => snprintf(str, capacity, "%d\n", choice.intVal);
+            STR => snprintf(str, capacity, "%s\n", choice.strVal);
+            BOOL => snprintf(str, capacity, "%s\n", if choice.boolVal then "true" else "false");
+            FLOAT => snprintf(str, capacity, "%f\n", choice.floatVal);
+            NONE => snprintf(str, capacity, "No value\n");
         }
         this.valueCount++;
         this.values.push(str);
     }
 
     function end(cmd: Command): Void {
+        printf("1\n");
+        for n in 0 ... this.valueCount {
+            printf("%s", this.values[n]);
+        }
+    }
+
+    function arg(choice: Choice, arg: Argument, args: Arguments): Void {
+        match arg.shortName {
+            c'h' => {
+                args.printAll();
+            }
+            default => {
+                printf("%s: ", arg.longName);
+                choice.printLn();
+            }
+        }
+    }
+}
+
+
+struct Res2 {
+    var values: Vector[CString];
+    var valueCount: Int = 0;
+
+    static function new(): Res2 {
+        return struct Self {
+            values: Vector.new(10),
+            valueCount: 0
+        };
+    }
+}
+
+
+implement Handler for Res2 {
+    function nothing(cmd: Command): Void {
+        printf("empty input\n");
+    }
+
+    function extra(choice: Choice, args: Arguments): Void {
+        // printf("extra: `");
+        // choice.print();
+        // printf("`\n");
+        var capacity: Int = 256;
+        var str: Ptr[Char] = *(mallocator.calloc(capacity)): Ptr[Char];
+        match choice.which {
+            INT => snprintf(str, capacity, "%d\n", choice.intVal);
+            STR => snprintf(str, capacity, "%s\n", choice.strVal);
+            BOOL => snprintf(str, capacity, "%s\n", if choice.boolVal then "true" else "false");
+            FLOAT => snprintf(str, capacity, "%f\n", choice.floatVal);
+            NONE => snprintf(str, capacity, "No value\n");
+        }
+        this.valueCount++;
+        this.values.push(str);
+    }
+
+    function end(cmd: Command): Void {
+        printf("2\n");
         for n in 0 ... this.valueCount {
             printf("%s", this.values[n]);
         }
@@ -80,17 +138,18 @@ implement Handler for ArgResults {
 
 
 function main(argc: Int, argv: Ptr[Ptr[Char]]) {
-    var myResults: ArgResults = ArgResults.new();
-    var test: Arguments = Arguments.new(myResults);
+    var results1: Res1 = Res1.new();
+    var results2: Res2 = Res2.new();
+    var test: Arguments = Arguments.new(results1);
     test.add(c'v', "val", Choice.newStr("abc"), "This is a test", required_argument);
     test.add(c'a', "aaaa", Choice.new(), "This is the second cli argument", no_argument);
     test.add(c'n', "new", Choice.newInt(0), "This is the third cli argument", optional_argument);
     test.add(c'h', "help", Choice.new(), "This gets help", no_argument);
-    var test2: Arguments = Arguments.new(myResults);
+    var test2: Arguments = Arguments.new(results2);
     test2.add(c'b', "blah", Choice.newInt(0), "foo > first arg", optional_argument);
     test2.add(c'd', "do", Choice.newInt(0), "foo > second arg", required_argument);
     test2.add(c'h', "help", Choice.new(), "This gets help", no_argument);
-    var command: Command = Command.new(test, myResults);
-    command.addSubcommand("foo", test2, myResults);
+    var command: Command = Command.new(test);
+    command.addSubcommand("foo", test2);
     command.process(argc, argv);
 }

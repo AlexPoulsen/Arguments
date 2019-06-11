@@ -15,10 +15,11 @@ struct Command {
     // var funcEnd: function (Choice, Argument, Arguments) -> Void;
     var handler: Box[Handler];
 
-    static function new(arguments: Arguments,
-                        // funcNoArgs: function (Choice, Argument, Arguments) -> Void = src.argument.defaultHandler,
-                        // funcEnd: function (Choice, Argument, Arguments) -> Void = src.argument.defaultHandler,
-                        handler: Box[Handler] = Handler.new()) {
+    static function new(arguments: Arguments
+                        // , funcNoArgs: function (Choice, Argument, Arguments) -> Void = src.argument.defaultHandler,
+                        //   funcEnd: function (Choice, Argument, Arguments) -> Void = src.argument.defaultHandler,
+                        //   handler: Box[Handler]
+                        ) {
         return struct Self {
             sub: Vector.new(4),
             args: arguments,
@@ -26,7 +27,7 @@ struct Command {
             map: Map.new(4),
             // funcNoArgs,
             // funcEnd,
-            handler
+            handler: arguments.handler
         };
     }
 
@@ -34,7 +35,7 @@ struct Command {
                                    arguments: Arguments,
                                    // funcNoArgs: function (Choice, Argument, Arguments) -> Void = src.argument.defaultHandler,
                                    // funcEnd: function (Choice, Argument, Arguments) -> Void = src.argument.defaultHandler
-                                   handler: Box[Handler] = Handler.new()) {
+                                   handler: Box[Handler]) {
         return struct Self {
             sub: Vector.new(4),
             args: arguments,
@@ -63,11 +64,12 @@ struct Command {
     }
 
     function addSubcommand(command: CString,
-                           arguments: Arguments,
-                           // funcNoArgs: function (Choice, Argument, Arguments) -> Void = src.argument.defaultHandler,
-                           handler: Box[Handler] = Handler.new()) {
+                           arguments: Arguments
+                           // , funcNoArgs: function (Choice, Argument, Arguments) -> Void = src.argument.defaultHandler,
+                           //   handler: Box[Handler]
+                           ) {
         this.map.put(command, this.sub.length);
-        this.sub.push(Command.subNew(command, arguments, this.handler));
+        this.sub.push(Command.subNew(command, arguments, arguments.handler));
     }
 
     function getSubcommand(command: CString): Command {

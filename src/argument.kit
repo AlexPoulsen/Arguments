@@ -11,9 +11,6 @@ const required_argument: Int = 1;
 const optional_argument: Int = 2;
 
 
-function defaultHandler(c: Choice, a: Argument, a_s: Arguments = Arguments.new()): Void {}
-
-
 struct Argument {
     const shortName: Char = c'_';  // used with -n
     const longName: CString = "__";  // used with --name
@@ -24,7 +21,7 @@ struct Argument {
     var flag: Ptr[Int] = &defaultFlag;
     var flagVal: Int = 0;
     // var func: function(Choice, Argument, Arguments) -> Void;
-    var handler: Box[Handler] = Handler.new();
+    var handler: Box[Handler];
     var initialized: Bool = false;
 
     static function new(shortName: Char = c'_',
@@ -35,7 +32,7 @@ struct Argument {
                         flag: Ptr[Int] = &defaultFlag,
                         flagVal: Int = 0,
                         // func: function(Choice, Argument, Arguments) -> Void = defaultHandler,
-                        handler: Box[Handler] = Handler.new()) {
+                        handler: Box[Handler]) {
         // printf("---- ---- new() %d\n", needsValue);
         return struct Self {
             shortName,
