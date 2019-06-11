@@ -3,18 +3,22 @@ import src.helperfunctions;
 import src.choice;
 import src.argument;
 import kitten.xs_Rounding;
+import src.handler;
 
 
 struct Arguments {
     var args: Vector[Argument];
     var mapS: Map[Char, Int];  // gets a lookup value into the args vector
     var mapL: Map[CString, Int];  // gets a lookup value into the args vector
+    // var funcExtraArgs: function (Choice, Argument, Arguments) -> Void;
+    var handler: Box[Handler];
 
-    static function new() {
+    static function new(handler: Box[Handler] = Handler.new()) {
         return struct Self {
             args: Vector.new(10),
             mapS: Map.new(10),
-            mapL: Map.new(10)
+            mapL: Map.new(10),
+            handler
         };
     }
 
@@ -23,7 +27,7 @@ struct Arguments {
                 defaultValue: Choice = Choice.newInt(0),
                 info: CString = "",
                 needsValue: Int = no_argument,
-                func: function (Choice, Argument, Arguments) -> Void,
+                // func: function (Choice, Argument, Arguments) -> Void,
                 flag: Ptr[Int] = &defaultFlag,
                 flagVal: Int = 0) {
         // printf("---- add() %d\n", needsValue);
@@ -36,7 +40,8 @@ struct Arguments {
                                     needsValue,
                                     flag,
                                     flagVal,
-                                    func));
+                                    // func,
+                                    this.handler));
         // printf("---- add() (query) %d\n", this.args[this.args.length - 1].needsValue);
     }
 
@@ -96,7 +101,7 @@ struct Arguments {
             var arg: Argument = this.args[this.mapL[s]];
             // printf("callL: ");
             // arg.currentValue.print();
-            arg.func(arg.currentValue, arg, this);
+            arg.call(arg.currentValue, this);
         } else {
             printf("`callL` failed, no argument exists for ");
             printf("%s\n", s);
@@ -106,7 +111,7 @@ struct Arguments {
     function callS(c: Char): Void {
         if this.mapS.exists(c) {
             var arg: Argument = this.args[this.mapS[c]];
-            arg.func(arg.currentValue, arg, this);
+            arg.call(arg.currentValue, this);
         } else {
             printf("`callS` failed, no argument exists for ");
             printf("%c\n", c);
@@ -172,6 +177,10 @@ struct Arguments {
                             this.callS(str[0]);
                         }
                     }
+                }
+            } else {
+                if n > 0 {
+                    this.handler.extra(Choice.newStr(*(argv + n)), this);
                 }
             }
         }

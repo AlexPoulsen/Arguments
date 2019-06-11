@@ -3,62 +3,94 @@ import src.choice;
 import src.argument;
 import src.arguments;
 import src.command;
+import src.handler;
 // import kitten.arguments;
 // import kitten._kitten_packages.arguments.src._import_all;
 // importfrom("kitten.arguments");
 // import kitten.arguments.*;
 
 
-function demoFunc(val: Choice, arg: Argument = Argument.new(), unused2: Arguments = Arguments.new()): Void {
-    printf("%s: ", arg.longName);
-    val.print();
+// function demoFunc(val: Choice, arg: Argument, unused2: Arguments): Void {
+//     printf("%s: ", arg.longName);
+//     val.printLn();
+// }
+
+
+struct ArgResults {
+    var values: Vector[CString];
+    var valueCount: Int = 0;
 }
 
 
-function helpHandler(unused: Choice, one: Argument = Argument.new(), all: Arguments = Arguments.new()): Void {
-    if one.func != defaultHandler {
-        one.printAll();
-    } else {
-        all.printAll();
+implement Handler for ArgResults {
+    static function new(): ArgResults {
+        return struct Self {
+            values: Vector.new(10),
+            valueCount: 0
+        };
+    }
+
+    function nothing(cmd: Command): Void {
+        printf("empty input\n");
+    }
+
+    function extra(choice: Choice, args: Arguments): Void {
+        // printf("extra: `");
+        // choice.print();
+        // printf("`\n");
+        var str: CString;
+        match choice.which {
+            INT => sprintf(str, "%d\n", choice.intVal);
+            STR => sprintf(str, "%s\n", choice.strVal);
+            BOOL => sprintf(str, "%s\n", if choice.boolVal then "true" else "false");
+            FLOAT => sprintf(str, "%f\n", choice.floatVal);
+            NONE => sprintf(str, "No value\n");
+        }
+        this.valueCount++;
+        this.values.push(str);
+    }
+
+    function end(cmd: Command): Void {
+        for n in 0 ... this.valueCount {
+            printf("%s", this.values[n]);
+        }
+    }
+
+    function arg(choice: Choice, arg: Argument, args: Arguments): Void {
+        match arg.shortName {
+            c'h' => {
+                args.printAll();
+            }
+            default => {
+                printf("%s: ", arg.longName);
+                choice.printLn();
+            }
+        }
     }
 }
 
 
+// function helpHandler(unused: Choice, one: Argument, all: Arguments): Void {
+//     if one.func != defaultHandler {
+//         one.printAll();
+//     } else {
+//         all.printAll();
+//     }
+// }
+
+
 function main(argc: Int, argv: Ptr[Ptr[Char]]) {
-    var test: Arguments = Arguments.new();
-    test.add(c'v', "val", Choice.newStr("abc"), "This is a test", required_argument, demoFunc);
-    test.add(c'a', "aaaa", Choice.new(0), "This is the second cli argument", no_argument, demoFunc);
-    test.add(c'n', "new", Choice.newInt(0), "This is the third cli argument", optional_argument, demoFunc);
-    test.add(c'h', "help", Choice.new(0), "This gets help", no_argument, helpHandler);
-    var test2: Arguments = Arguments.new();
-    test2.add(c'b', "blah", Choice.newInt(0), "foo > first arg", optional_argument, demoFunc);
-    test2.add(c'd', "do", Choice.newInt(0), "foo > second arg", required_argument, demoFunc);
-    test2.add(c'h', "help", Choice.new(0), "This gets help", no_argument, helpHandler);
-    // test.printAll();
-    // process_old(argc, argv, test);
-    // process(argc, argv, test);
-    var command: Command = Command.new(test);
-    command.addSubcommand("foo", test2);
-    // printf("%d", command.getSubcommand("foo").args.mapL.length);
-    // for n in 0 ... command.getSubcommand("foo").args.args.length {
-    //     printf("before proc ");
-    //     printf("foo %s ", command.getSubcommand("foo").args.args[n].longName);
-    //     command.getSubcommand("foo").args.args[n].currentValue.print();
-    // }
-    // for n in 0 ... command.args.args.length {
-    //     printf("before proc ");
-    //     printf("test %s ", command.args.args[n].longName);
-    //     command.args.args[n].currentValue.print();
-    // }
+    var myResults: ArgResults = ArgResults.new();
+    var test: Arguments = Arguments.new(myResults);
+    test.add(c'v', "val", Choice.newStr("abc"), "This is a test", required_argument);
+    test.add(c'a', "aaaa", Choice.new(), "This is the second cli argument", no_argument);
+    test.add(c'n', "new", Choice.newInt(0), "This is the third cli argument", optional_argument);
+    test.add(c'h', "help", Choice.new(), "This gets help", no_argument);
+    var test2: Arguments = Arguments.new(myResults);
+    test2.add(c'b', "blah", Choice.newInt(0), "foo > first arg", optional_argument);
+    test2.add(c'd', "do", Choice.newInt(0), "foo > second arg", required_argument);
+    test2.add(c'h', "help", Choice.new(), "This gets help", no_argument);
+    var command: Command = Command.new(test, myResults);
+    command.addSubcommand("foo", test2, myResults);
     command.process(argc, argv);
-    // for n in 0 ... command.getSubcommand("foo").args.args.length {
-    //     printf("after proc ");
-    //     printf("foo %s ", command.getSubcommand("foo").args.args[n].longName);
-    //     command.getSubcommand("foo").args.args[n].currentValue.print();
-    // }
-    // for n in 0 ... command.args.args.length {
-    //     printf("after proc ");
-    //     printf("test %s ", command.args.args[n].longName);
-    //     command.args.args[n].currentValue.print();
-    // }
 }

@@ -2,6 +2,7 @@ import kit.map;
 import src.helperfunctions;
 import src.choice;
 import src.arguments;
+import src.handler;
 
 
 var defaultFlag = 0;
@@ -22,7 +23,8 @@ struct Argument {
     var needsValue: Int;
     var flag: Ptr[Int] = &defaultFlag;
     var flagVal: Int = 0;
-    var func: function(Choice, Argument, Arguments) -> Void;
+    // var func: function(Choice, Argument, Arguments) -> Void;
+    var handler: Box[Handler] = Handler.new();
     var initialized: Bool = false;
 
     static function new(shortName: Char = c'_',
@@ -32,7 +34,8 @@ struct Argument {
                         needsValue: Int = no_argument,
                         flag: Ptr[Int] = &defaultFlag,
                         flagVal: Int = 0,
-                        func: function(Choice, Argument, Arguments) -> Void = defaultHandler) {
+                        // func: function(Choice, Argument, Arguments) -> Void = defaultHandler,
+                        handler: Box[Handler] = Handler.new()) {
         // printf("---- ---- new() %d\n", needsValue);
         return struct Self {
             shortName,
@@ -43,7 +46,8 @@ struct Argument {
             needsValue,
             flag,
             flagVal,
-            func,
+            // func,
+            handler,
             initialized: true
         };
     }
@@ -87,11 +91,11 @@ struct Argument {
         this.printDefault();
     }
 
-    function call(value: Choice = Choice.new()): Void {
+    function call(value: Choice = Choice.new(), args: Arguments): Void {
         if value.which == ChoiceWhich.NONE {
             value = this.currentValue;
         }
-        this.func(value, this, Arguments.new());
+        this.handler.arg(value, this, args);
     }
 
     function setValueFromString(s: CString) {
