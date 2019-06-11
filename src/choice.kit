@@ -70,13 +70,23 @@ struct Choice {
         };
     }
 
-    function print() {
+    function printLn() {
         match this.which {
             INT => printf("%d\n", this.intVal);
             STR => printf("%s\n", this.strVal);
             BOOL => printf("%s\n", if this.boolVal then "true" else "false");
             FLOAT => printf("%f\n", this.floatVal);
             NONE => printf("No value\n");
+        }
+    }
+
+    function print() {
+        match this.which {
+            INT => printf("%d", this.intVal);
+            STR => printf("%s", this.strVal);
+            BOOL => printf("%s", if this.boolVal then "true" else "false");
+            FLOAT => printf("%f", this.floatVal);
+            NONE => printf("No value");
         }
     }
 }
