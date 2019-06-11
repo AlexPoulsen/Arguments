@@ -1,0 +1,14 @@
+import src.helperfunctions;
+import src.choice;
+import src.argument;
+import src.arguments;
+import src.command;
+
+
+trait Handler {
+    static function new(): Handler;
+    function nothing(cmd: Command): Void;
+    function extra(choice: Choice, args: Arguments): Void;
+    function end(cmd: Command): Void;
+    function arg(choice: Choice, arg: Argument, args: Arguments): Void;
+}
